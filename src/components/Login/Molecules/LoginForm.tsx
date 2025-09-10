@@ -15,7 +15,7 @@ interface LoginFormProps {
   onLogin: (
     data: { email: string; password: string } | { nombre: string },
     esAdmin: boolean
-  ) => Promise<void>;
+  ) => Promise<void> | void;
   // onGoogleSignIn: () => Promise<void>;
   // onGoogleSignUp: () => Promise<void>;
   error?: string;

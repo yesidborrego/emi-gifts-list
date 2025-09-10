@@ -16,12 +16,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-// import {
-//   getProducts,
-//   deleteProduct,
-//   getAvailableQuantity,
-// } from "@/lib/supabase-functions";
-// import type { Product } from "@/lib/types";
 import { useGiftStore } from "@/hooks/use-gift-store";
 import { useState } from "react";
 
@@ -31,49 +25,7 @@ interface ProductTableProps {
 
 export function ProductTable({ onEditProduct }: ProductTableProps) {
   const { productos, store } = useGiftStore();
-  // const [products, setProducts] = useState<Product[]>([]);
-  // const [isLoading, setIsLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  // const [availableQuantities, setAvailableQuantities] = useState<
-  //   Record<string, number>
-  // >({});
-
-  /* const fetchProducts = async () => {
-    setIsLoading(true);
-    try {
-      const productsData = await getProducts();
-      setProducts(productsData);
-      const quantities: Record<string, number> = {};
-      for (const product of productsData) {
-        const available = await getAvailableQuantity(product.id);
-        quantities[product.id] = available;
-      }
-      setAvailableQuantities(quantities);
-    } catch (error) {
-      toast.error("Error al cargar los productos");
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchProducts();
-  }, []); */
-
-  /* const handleDeleteProduct = async (productId: string) => {
-    try {
-      setDeletingId(productId);
-      await deleteProduct(productId);
-      toast.success("Producto eliminado");
-      fetchProducts(); // Refresh the list
-    } catch (error) {
-      toast.error("No se pudo eliminar el producto");
-      console.error(error);
-    } finally {
-      setDeletingId(null);
-    }
-  }; */
 
   const handleDeleteProduct = async (productId: string) => {
     try {
@@ -94,14 +46,6 @@ export function ProductTable({ onEditProduct }: ProductTableProps) {
       setDeletingId(null);
     }
   };
-
-  /* if (isLoading) {
-    return (
-      <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  } */
 
   if (productos.length === 0) {
     return (

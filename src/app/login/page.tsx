@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LoginForm } from "@/components/Login/Molecules/LoginForm";
 import { toast } from "react-hot-toast";
@@ -9,29 +9,30 @@ import { useGuestStore } from "@/store/use-guest-store";
 
 export default function LoginPage() {
   const router = useRouter();
-  // const searchParams = useSearchParams();
   const [error, setError] = useState<string>("");
-  const { signIn } = useAuthStore();
+  const { signIn, session } = useAuthStore();
   const { setGuestName } = useGuestStore();
 
-  /* useEffect(() => {
-    const errorParam = searchParams.get("error");
-    if (errorParam === "access_denied") {
-      toast.error("Usuario no válido o sin acceso.");
+  useEffect(() => {
+    if (session) {
+      router.push("/admin");
     }
-  }, [searchParams]); */
+  }, [session, router]);
 
-  const handleLogin = async (
+  const handleLogin = (
     data: { email: string; password: string } | { nombre: string },
     esAdmin: boolean
   ) => {
     try {
       setError("");
       if (esAdmin) {
-        const { email, password } = data as { email: string; password: string };
-        await signIn(email, password);
-        toast.success("Inicio de sesión exitoso");
-        router.push("/admin");
+        const { email, password } = data as {
+          email: string;
+          password: string;
+        };
+        signIn(email, password);
+
+        toast.success("Inicio de sesión exitoso", { duration: 3000 });
       } else {
         const { nombre } = data as { nombre: string };
         setGuestName(nombre);
@@ -44,62 +45,6 @@ export default function LoginPage() {
       toast.error(errorMessage);
     }
   };
-
-  /* const handleGoogleSignIn = async () => {
-    try {
-      setError("");
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: window.location.origin + "/auth/callback",
-          queryParams: {
-            prompt: "select_account",
-          },
-        },
-      });
-
-      if (error) {
-        throw error;
-      }
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "Error al iniciar sesión con Google";
-      setError(errorMessage);
-      toast.error(errorMessage);
-    }
-  }; */
-
-  /* const handleGoogleSignUp = async () => {
-    try {
-      setError("");
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: window.location.origin + "/auth/callback",
-          queryParams: {
-            prompt: "select_account",
-          },
-        },
-      });
-
-      if (error) {
-        throw error;
-      }
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Error al registrarse con Google";
-      setError(errorMessage);
-      toast.error(errorMessage);
-    }
-  }; */
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted to-secondary/20 flex items-center justify-center p-4">
@@ -128,12 +73,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <LoginForm
-          onLogin={handleLogin}
-          // onGoogleSignIn={handleGoogleSignIn}
-          // onGoogleSignUp={handleGoogleSignUp}
-          error={error}
-        />
+        <LoginForm onLogin={handleLogin} error={error} />
 
         <div
           className="mt-8 text-center slide-in-up"

@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 export function UserHeader() {
   const { user, signOut } = useAuthStore();
   const { guestName, clearGuestName } = useGuestStore();
+  const { adminName } = useAuthStore();
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -22,7 +23,9 @@ export function UserHeader() {
     router.push("/login");
   };
 
-  const displayName = user?.user_metadata?.full_name ?? user?.email ?? guestName;
+  const displayName = guestName || adminName;
+  // user?.user_metadata?.full_name ?? user?.email ?? guestName;
+  console.log({ displayName });
   const role = user ? "Administrador" : "Visitante";
 
   if (!displayName) {
