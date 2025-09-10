@@ -10,11 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "react-hot-toast";
 import { X } from "lucide-react";
-import {
-  getProductById,
-  createProduct,
-  updateProduct,
-} from "@/lib/supabase-functions";
+import { useGiftStore } from "@/hooks/use-gift-store";
 
 interface ProductFormProps {
   productId?: string | null;
@@ -28,71 +24,77 @@ export function ProductForm({
   onSuccess,
 }: ProductFormProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const { productos, store } = useGiftStore();
   const [formData, setFormData] = useState({
-    name: "",
-    quantity: "",
-    description: "",
+    nombre: "",
+    cantidad: "",
+    descripcion: "",
   });
 
   const isEditing = Boolean(productId);
+  const producto = productos.find((p) => p.id === productId);
 
   useEffect(() => {
-    const fetchProduct = async () => {
-      if (isEditing && productId) {
-        setIsLoading(true);
-        try {
-          const product = await getProductById(productId);
-          setFormData({
-            name: product.name,
-            quantity: product.quantity.toString(),
-            description: product.description || "",
-          });
-        } catch (error) {
-          toast.error("Error al cargar el producto");
-          console.error(error);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-    fetchProduct();
-  }, [isEditing, productId]);
+    if (isEditing && producto) {
+      setFormData({
+        nombre: producto.nombre,
+        cantidad: producto.cantidad.toString(),
+        descripcion: producto.descripcion || "",
+      });
+    }
+  }, [isEditing, producto]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name.trim() || !formData.quantity.trim()) {
-      toast.error("El nombre y la cantidad son obligatorios");
+    if (!formData.nombre.trim() || !formData.cantidad.trim()) {
+      toast.error("El nombre y la cantidad son obligatorios", {
+        duration: 3000,
+      });
       return;
     }
 
-    const quantity = Number.parseInt(formData.quantity);
-    if (isNaN(quantity) || quantity < 0) {
-      toast.error("La cantidad debe ser un número válido mayor o igual a 0");
+    const cantidad = Number.parseInt(formData.cantidad);
+    if (isNaN(cantidad) || cantidad < 0) {
+      toast.error("La cantidad debe ser un número válido mayor o igual a 0", {
+        duration: 3000,
+      });
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const productData = {
-        name: formData.name.trim(),
-        quantity,
-        description: formData.description.trim() || undefined,
-      };
-
       if (isEditing && productId) {
-        await updateProduct(productId, productData);
-        toast.success("Producto actualizado");
+        store.actualizarProducto(productId, {
+          nombre: formData.nombre.trim(),
+          cantidad,
+          descripcion: formData.descripcion.trim() || undefined,
+        });
+
+        toast.success("El producto ha sido actualizado correctamente.", {
+          duration: 3000,
+        });
       } else {
-        await createProduct(productData);
-        toast.success("Producto creado");
+        store.crearProducto(
+          formData.nombre.trim(),
+          cantidad,
+          formData.descripcion.trim() || undefined
+        );
+
+        toast.success("El producto ha sido creado correctamente.", {
+          duration: 3000,
+        });
       }
 
       onSuccess();
     } catch (error) {
-      toast.error("No se pudo guardar el producto");
-      console.error(error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "No se pudo guardar el producto",
+        { duration: 3000 }
+      );
     } finally {
       setIsLoading(false);
     }
@@ -116,14 +118,14 @@ export function ProductForm({
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="name">Nombre del producto *</Label>
+            <Label htmlFor="nombre">Nombre del producto *</Label>
             <Input
-              id="name"
+              id="nombre"
               type="text"
               placeholder="Ej: Smartphone Samsung Galaxy"
-              value={formData.name}
+              value={formData.nombre}
               onChange={(e) =>
-                setFormData((prev) => ({ ...prev, name: e.target.value }))
+                setFormData((prev) => ({ ...prev, nombre: e.target.value }))
               }
               className="h-12"
               required
@@ -132,15 +134,15 @@ export function ProductForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="quantity">Cantidad disponible *</Label>
+            <Label htmlFor="cantidad">Cantidad disponible *</Label>
             <Input
-              id="quantity"
+              id="cantidad"
               type="number"
               min="0"
               placeholder="Ej: 5"
-              value={formData.quantity}
+              value={formData.cantidad}
               onChange={(e) =>
-                setFormData((prev) => ({ ...prev, quantity: e.target.value }))
+                setFormData((prev) => ({ ...prev, cantidad: e.target.value }))
               }
               className="h-12"
               required
@@ -149,15 +151,15 @@ export function ProductForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Descripción (opcional)</Label>
+            <Label htmlFor="descripcion">Descripción (opcional)</Label>
             <Textarea
-              id="description"
+              id="descripcion"
               placeholder="Descripción del producto..."
-              value={formData.description}
+              value={formData.descripcion}
               onChange={(e) =>
                 setFormData((prev) => ({
                   ...prev,
-                  description: e.target.value,
+                  descripcion: e.target.value,
                 }))
               }
               className="min-h-[80px] resize-none"

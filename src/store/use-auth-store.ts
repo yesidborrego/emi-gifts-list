@@ -1,6 +1,5 @@
 import { create } from "zustand";
-import { supabase } from "@/lib/supabase";
-import { User, Session } from "@supabase/supabase-js";
+import { User, Session } from "@/lib/types";
 
 interface AuthState {
   user: User | null;
@@ -8,7 +7,7 @@ interface AuthState {
   adminName: string | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => void;
-  signOut: () => Promise<void>;
+  signOut: () => void;
   setUser: (user: User | null, session: Session | null) => void;
 }
 
@@ -21,33 +20,23 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({
       user,
       session,
-      adminName: user?.user_metadata?.name || null,
+      adminName: user?.nombre || null,
       isLoading: false,
     }),
   signIn: (email, password) => {
     set({ isLoading: true });
-    // TODO: Eliminar el siguiente código cuando se implemente Supabase
-    // const adminName = email.split("@")[0];
     const adminName = "Geo";
     set({
-      user: { id: "admin-id", email: email } as User,
-      session: { access_token: "mock-token" } as Session,
+      user: { id: "admin-id", email: email },
+      session: {
+        access_token: "mock-token",
+        user: { id: "admin-id", email: email },
+      },
       adminName,
       isLoading: false,
     });
   },
-  signOut: async () => {
-    set({ isLoading: true });
-    await supabase.auth.signOut();
+  signOut: () => {
     set({ user: null, session: null, adminName: null, isLoading: false });
   },
 }));
-
-// Initialize the store with the session from Supabase
-/* supabase.auth.getSession().then(({ data: { session } }) => {
-  useAuthStore.getState().setUser(session?.user ?? null, session);
-});
-
-supabase.auth.onAuthStateChange((_event, session) => {
-  useAuthStore.getState().setUser(session?.user ?? null, session);
-}); */

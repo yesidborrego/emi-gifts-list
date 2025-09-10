@@ -24,8 +24,6 @@ export function UserHeader() {
   };
 
   const displayName = guestName || adminName;
-  // user?.user_metadata?.full_name ?? user?.email ?? guestName;
-  console.log({ displayName });
   const role = user ? "Administrador" : "Visitante";
 
   if (!displayName) {
