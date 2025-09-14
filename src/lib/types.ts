@@ -1,9 +1,8 @@
 export interface User {
-  id: string;
-  email?: string; // Mantengo email como opcional por si lo necesitas
-  nombre?: string;
-  esAdmin?: boolean;
-  fechaCreacion?: Date;
+  email?: string;
+  id: number;
+  name?: string;
+  status?: boolean;
 }
 
 export interface Session {
@@ -11,28 +10,28 @@ export interface Session {
   user: User;
 }
 
-export interface Producto {
+export interface Product {
+  amount: number;
+  createdAt: Date;
+  description?: string;
   id: string;
-  nombre: string;
-  cantidad: number;
-  descripcion?: string;
-  fechaCreacion: Date;
-  fechaActualizacion: Date;
+  name: string;
+  updatedAt: Date;
 }
 
-export interface Asignacion {
+export interface Assignment {
+  assignedAmount: number;
+  assignedAt: Date;
   id: string;
-  usuarioId: string;
-  productoId: string;
-  cantidadAsignada: number;
-  fechaAsignacion: Date;
-  usuario?: User;
-  producto?: Producto;
+  product?: Product;
+  productId: string;
+  user?: User;
+  userId: string;
 }
 
 export interface GiftListState {
-  usuarios: User[];
-  productos: Producto[];
-  asignaciones: Asignacion[];
-  usuarioActual: User | null;
+  assignments: Assignment[];
+  currentUser: User | null;
+  products: Product[];
+  users: User[];
 }

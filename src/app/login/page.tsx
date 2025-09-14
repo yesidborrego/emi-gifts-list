@@ -1,58 +1,74 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LoginForm } from "@/components/Login/Molecules/LoginForm";
 import { toast } from "react-hot-toast";
-import { useAuthStore } from "@/store/use-auth-store";
 import { useGuestStore } from "@/store/use-guest-store";
+import {
+  searchVisitorsByName,
+  storeVisitor,
+} from "@/services/apiVisitors.service";
 
 export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState<string>("");
-  const { signIn, session } = useAuthStore();
-  const { setGuestName } = useGuestStore();
+  const { setGuestName, setVisitorId } = useGuestStore();
 
-  useEffect(() => {
-    if (session) {
-      router.push("/admin");
-    }
-  }, [session, router]);
-
-  const handleLogin = (
-    data: { email: string; password: string } | { nombre: string },
-    esAdmin: boolean
-  ) => {
+  const handleLogin = async (data: { nombre: string }) => {
     try {
       setError("");
-      if (esAdmin) {
-        const { email, password } = data as {
-          email: string;
-          password: string;
-        };
-        signIn(email, password);
+      const { nombre } = data;
 
-        toast.success("Inicio de sesión exitoso", { duration: 3000 });
-      } else {
-        const { nombre } = data as { nombre: string };
-        setGuestName(nombre);
-        router.push("/regalos");
+      const { data: visitors, status } = await searchVisitorsByName(nombre);
+
+      if (status === 200) {
+        if (visitors && visitors.length > 0) {
+          const errorMessage =
+            "Este nombre ya ha sido tomado, por favor elige otro.";
+          setError(errorMessage);
+          toast.error(errorMessage, { duration: 3000 });
+          return;
+        }
+
+        const response = await storeVisitor(nombre);
+        if (response.status === 201 && response.data) {
+          setVisitorId(response.data.id);
+          setGuestName(nombre);
+          toast.success(`Bienvenida(o), ${nombre}`, { duration: 3000 });
+          router.push("/regalos");
+        } else {
+          const errorMessage =
+            "Error al guardar el visitante. Por favor, intenta nuevamente.";
+          setError(errorMessage);
+          toast.error(errorMessage, { duration: 3000 });
+        }
+        return;
       }
+      if (status === 409) {
+        const errorMessage = "Esta persona ya ingresó al sitio anteriormente.";
+        setError(errorMessage);
+        toast.error(errorMessage, { duration: 3000 });
+        return;
+      }
+      const errorMessage = "Error al validar el nombre de usuario.";
+      setError(errorMessage);
+      toast.error(errorMessage, { duration: 3000 });
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Error al iniciar sesión";
       setError(errorMessage);
-      toast.error(errorMessage);
+      toast.error(errorMessage, { duration: 3000 });
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted to-secondary/20 flex items-center justify-center p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-background via-muted to-secondary/20 p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-4 slide-in-up">
-          <div className="inline-flex items-center justify-center h-16 bg-primary rounded-full w-16 mb-2 pulse-glow">
+        <div className="slide-in-up mb-4 text-center">
+          <div className="pulse-glow mb-2 inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary">
             <svg
-              className="w-8 h-8 text-primary-foreground"
+              className="h-8 w-8 text-primary-foreground"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -65,10 +81,10 @@ export default function LoginPage() {
               />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">
+          <h1 className="mb-2 text-3xl font-bold text-foreground">
             Lista de Regalos
           </h1>
-          <p className="text-muted-foreground text-balance">
+          <p className="text-balance text-muted-foreground">
             Bienvenido a nuestra plataforma de gestión de regalos
           </p>
         </div>
@@ -76,7 +92,7 @@ export default function LoginPage() {
         <LoginForm onLogin={handleLogin} error={error} />
 
         <div
-          className="mt-8 text-center slide-in-up"
+          className="slide-in-up mt-8 text-center"
           style={{ animationDelay: "0.3s" }}
         >
           <p className="text-sm text-muted-foreground">

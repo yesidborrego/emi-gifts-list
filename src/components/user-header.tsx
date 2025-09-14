@@ -1,37 +1,53 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useAuthStore } from "@/store/use-auth-store";
 import { useGuestStore } from "@/store/use-guest-store";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/use-auth-store";
+import { fetchLogout } from "@/services/apiAuth.service";
 
 export function UserHeader() {
-  const { user, signOut } = useAuthStore();
+  const { user: adminUser, signOut: adminSignOut } = useAuthStore();
   const { guestName, clearGuestName } = useGuestStore();
-  const { adminName } = useAuthStore();
   const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
 
-  const handleLogout = async () => {
-    if (user) {
-      await signOut();
-    } else {
-      clearGuestName();
-    }
-    router.push("/login");
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const onLogout = async () => {
+    await fetchLogout();
   };
 
-  const displayName = guestName || adminName;
-  const role = user ? "Administrador" : "Visitante";
+  const handleLogout = async () => {
+    if (adminUser) {
+      onLogout();
+      adminSignOut();
+      useAuthStore.persist.clearStorage();
+      localStorage.removeItem("admin-last-path");
+      router.push("/login-admin");
+    } else {
+      clearGuestName();
+      useGuestStore.persist.clearStorage();
+      localStorage.removeItem("guest-last-path");
+      router.push("/login");
+    }
+  };
 
-  if (!displayName) {
+  const displayName = guestName || adminUser?.name;
+  const role = adminUser ? "Administrador" : "Visitante";
+
+  if (!isMounted) {
     return null;
   }
 
   return (
-    <Card className="m-4 p-4 bg-card/95 backdrop-blur-sm border-0 shadow-lg slide-in-up">
+    <Card className="slide-in-up m-4 border-0 bg-card/95 p-4 shadow-lg backdrop-blur-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Image
@@ -47,7 +63,7 @@ export function UserHeader() {
             </h2>
             <div className="flex items-center gap-2">
               <Badge
-                variant={user ? "default" : "secondary"}
+                variant={adminUser ? "default" : "secondary"}
                 className="text-xs"
               >
                 {role}
@@ -60,7 +76,7 @@ export function UserHeader() {
             variant="ghost"
             size="sm"
             onClick={handleLogout}
-            className="text-muted-foreground hover:text-white"
+            className="text-muted-foreground hover:text-white cursor-pointer"
           >
             Cerrar Sesión
           </Button>
