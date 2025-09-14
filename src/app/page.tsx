@@ -10,24 +10,22 @@ import Image from "next/image";
 
 export default function HomePage() {
   const router = useRouter();
-  const { user, isLoading: authLoading } = useAuthStore();
+  const { user } = useAuthStore();
   const { guestName } = useGuestStore();
 
   useEffect(() => {
-    if (!authLoading) {
-      const timer = setTimeout(() => {
-        if (user) {
-          router.push("/admin");
-        } else if (guestName) {
-          router.push("/regalos");
-        } else {
-          router.push("/login");
-        }
-      }, 1500); // Added delay for better loading experience
+    const timer = setTimeout(() => {
+      if (user) {
+        router.push("/admin");
+      } else if (guestName) {
+        router.push("/regalos");
+      } else {
+        router.push("/login");
+      }
+    }, 1500); // Added delay for better loading experience
 
-      return () => clearTimeout(timer);
-    }
-  }, [user, guestName, authLoading, router]);
+    return () => clearTimeout(timer);
+  }, [user, guestName, router]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted to-secondary/20 flex items-center justify-center particles-bg">

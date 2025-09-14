@@ -10,7 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "react-hot-toast";
 import { X } from "lucide-react";
-import { useGiftStore } from "@/hooks/use-gift-store";
+import { useProductStore } from "@/store/use-product-store";
+import {
+  createProduct,
+  updateProduct as apiUpdateProduct,
+} from "@/services/apiProducts.service";
 
 interface ProductFormProps {
   productId?: string | null;
@@ -24,22 +28,22 @@ export function ProductForm({
   onSuccess,
 }: ProductFormProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const { productos, store } = useGiftStore();
+  const { addProduct, updateProduct, products } = useProductStore();
   const [formData, setFormData] = useState({
-    nombre: "",
-    cantidad: "",
-    descripcion: "",
+    name: "",
+    amount: "",
+    description: "",
   });
 
   const isEditing = Boolean(productId);
-  const producto = productos.find((p) => p.id === productId);
+  const producto = products.find((p) => p.id === productId);
 
   useEffect(() => {
     if (isEditing && producto) {
       setFormData({
-        nombre: producto.nombre,
-        cantidad: producto.cantidad.toString(),
-        descripcion: producto.descripcion || "",
+        name: producto.name,
+        amount: producto.amount.toString(),
+        description: producto.description || "",
       });
     }
   }, [isEditing, producto]);
@@ -47,15 +51,15 @@ export function ProductForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.nombre.trim() || !formData.cantidad.trim()) {
+    if (!formData.name.trim() || !formData.amount.trim()) {
       toast.error("El nombre y la cantidad son obligatorios", {
         duration: 3000,
       });
       return;
     }
 
-    const cantidad = Number.parseInt(formData.cantidad);
-    if (isNaN(cantidad) || cantidad < 0) {
+    const amount = Number.parseInt(formData.amount);
+    if (isNaN(amount) || amount < 0) {
       toast.error("La cantidad debe ser un número válido mayor o igual a 0", {
         duration: 3000,
       });
@@ -66,35 +70,38 @@ export function ProductForm({
 
     try {
       if (isEditing && productId) {
-        store.actualizarProducto(productId, {
-          nombre: formData.nombre.trim(),
-          cantidad,
-          descripcion: formData.descripcion.trim() || undefined,
+        const response = await apiUpdateProduct(productId, {
+          amount,
+          description: formData.description.trim() || undefined,
+          name: formData.name.trim(),
         });
 
-        toast.success("El producto ha sido actualizado correctamente.", {
-          duration: 3000,
-        });
+        if (response.status === 200 && response.data) {
+          updateProduct(response.data);
+          toast.success("El producto ha sido actualizado correctamente.");
+        } else {
+          throw new Error(response.message || "Error al actualizar");
+        }
       } else {
-        store.crearProducto(
-          formData.nombre.trim(),
-          cantidad,
-          formData.descripcion.trim() || undefined
-        );
-
-        toast.success("El producto ha sido creado correctamente.", {
-          duration: 3000,
+        const response = await createProduct({
+          amount,
+          description: formData.description.trim() || undefined,
+          name: formData.name.trim(),
         });
+
+        if (response.status === 201 && response.data) {
+          addProduct(response.data);
+          toast.success("El producto ha sido creado correctamente.");
+        } else {
+          throw new Error(response.message || "Error al crear el producto");
+        }
       }
 
       onSuccess();
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "No se pudo guardar el producto",
-        { duration: 3000 }
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : "Ocurrió un error";
+      toast.error(errorMessage, { duration: 3000 });
     } finally {
       setIsLoading(false);
     }
@@ -118,14 +125,14 @@ export function ProductForm({
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="nombre">Nombre del producto *</Label>
+            <Label htmlFor="name">Nombre del producto *</Label>
             <Input
-              id="nombre"
+              id="name"
               type="text"
               placeholder="Ej: Smartphone Samsung Galaxy"
-              value={formData.nombre}
+              value={formData.name}
               onChange={(e) =>
-                setFormData((prev) => ({ ...prev, nombre: e.target.value }))
+                setFormData((prev) => ({ ...prev, name: e.target.value }))
               }
               className="h-12"
               required
@@ -134,15 +141,15 @@ export function ProductForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="cantidad">Cantidad disponible *</Label>
+            <Label htmlFor="amount">Cantidad disponible *</Label>
             <Input
-              id="cantidad"
+              id="amount"
               type="number"
               min="0"
               placeholder="Ej: 5"
-              value={formData.cantidad}
+              value={formData.amount}
               onChange={(e) =>
-                setFormData((prev) => ({ ...prev, cantidad: e.target.value }))
+                setFormData((prev) => ({ ...prev, amount: e.target.value }))
               }
               className="h-12"
               required
@@ -151,15 +158,15 @@ export function ProductForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="descripcion">Descripción (opcional)</Label>
+            <Label htmlFor="description">Descripción (opcional)</Label>
             <Textarea
-              id="descripcion"
+              id="description"
               placeholder="Descripción del producto..."
-              value={formData.descripcion}
+              value={formData.description}
               onChange={(e) =>
                 setFormData((prev) => ({
                   ...prev,
-                  descripcion: e.target.value,
+                  description: e.target.value,
                 }))
               }
               className="min-h-[80px] resize-none"

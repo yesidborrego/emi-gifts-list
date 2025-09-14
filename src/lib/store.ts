@@ -1,45 +1,45 @@
-import type { User, Producto, Asignacion, GiftListState } from "./types";
+import type { User, Product, Assignment, GiftListState } from "./types";
 
 class GiftListStore {
   private state: GiftListState = {
-    usuarios: [],
-    productos: [
+    users: [],
+    products: [
       // Sample data for demonstration
-      {
-        id: "1",
-        nombre: "Smartphone Samsung Galaxy",
-        cantidad: 2,
-        descripcion: "Último modelo con cámara de alta resolución",
-        fechaCreacion: new Date(),
-        fechaActualizacion: new Date(),
-      },
-      {
-        id: "2",
-        nombre: "Auriculares Bluetooth",
-        cantidad: 5,
-        descripcion: "Cancelación de ruido activa",
-        fechaCreacion: new Date(),
-        fechaActualizacion: new Date(),
-      },
-      {
-        id: "3",
-        nombre: "Tablet iPad Air",
-        cantidad: 1,
-        descripcion: "Perfecta para trabajo y entretenimiento",
-        fechaCreacion: new Date(),
-        fechaActualizacion: new Date(),
-      },
-      {
-        id: "4",
-        nombre: "Smartwatch Apple Watch",
-        cantidad: 3,
-        descripcion: "Monitoreo de salud y fitness",
-        fechaCreacion: new Date(),
-        fechaActualizacion: new Date(),
-      },
+      // {
+      //   id: "1",
+      //   name: "Smartphone Samsung Galaxy",
+      //   amount: 2,
+      //   description: "Último modelo con cámara de alta resolución",
+      //   createdAt: new Date(),
+      //   updatedAt: new Date(),
+      // },
+      // {
+      //   id: "2",
+      //   name: "Auriculares Bluetooth",
+      //   amount: 5,
+      //   description: "Cancelación de ruido activa",
+      //   createdAt: new Date(),
+      //   updatedAt: new Date(),
+      // },
+      // {
+      //   id: "3",
+      //   name: "Tablet iPad Air",
+      //   amount: 1,
+      //   description: "Perfecta para trabajo y entretenimiento",
+      //   createdAt: new Date(),
+      //   updatedAt: new Date(),
+      // },
+      // {
+      //   id: "4",
+      //   name: "Smartwatch Apple Watch",
+      //   amount: 3,
+      //   description: "Monitoreo de salud y fitness",
+      //   createdAt: new Date(),
+      //   updatedAt: new Date(),
+      // },
     ],
-    asignaciones: [],
-    usuarioActual: null,
+    assignments: [],
+    currentUser: null,
   };
 
   private listeners: (() => void)[] = [];
@@ -60,160 +60,155 @@ class GiftListStore {
   }
 
   // User management
-  crearUsuario(nombre: string, esAdmin = false): User {
-    const usuarioExistente = this.state.usuarios.find(
-      (u) => u && u.nombre && u.nombre.toLowerCase() === nombre.toLowerCase()
+  createUser(name: string, isAdmin = false): User {
+    const existingUser = this.state.users.find(
+      (u) => u.name?.toLowerCase() === name.toLowerCase()
     );
-    if (usuarioExistente) {
+    if (existingUser) {
       throw new Error("Ya existe un usuario con ese nombre");
     }
 
-    const nuevoUsuario: User = {
-      id: Date.now().toString(),
-      nombre,
-      esAdmin,
-      fechaCreacion: new Date(),
+    const newUser: User = {
+      id: Date.now(),
+      name,
+      status: isAdmin,
     };
 
-    this.state.usuarios.push(nuevoUsuario);
+    this.state.users.push(newUser);
     this.notify();
-    return nuevoUsuario;
+    return newUser;
   }
 
-  iniciarSesion(nombre: string, esAdmin = false): User {
-    let usuario = this.state.usuarios.find(
-      (u) => u && u.nombre && u.nombre.toLowerCase() === nombre.toLowerCase()
+  login(name: string, isAdmin = false): User {
+    let user = this.state.users.find(
+      (u) => u.name?.toLowerCase() === name.toLowerCase()
     );
 
-    if (!usuario) {
-      usuario = this.crearUsuario(nombre, esAdmin);
+    if (!user) {
+      user = this.createUser(name, isAdmin);
     }
 
-    this.state.usuarioActual = usuario;
+    this.state.currentUser = user;
     this.notify();
-    return usuario;
+    return user;
   }
 
-  cerrarSesion() {
-    this.state.usuarioActual = null;
+  logout() {
+    this.state.currentUser = null;
     this.notify();
   }
 
   // Product management
-  crearProducto(
-    nombre: string,
-    cantidad: number,
-    descripcion?: string
-  ): Producto {
-    const nuevoProducto: Producto = {
+  createProduct(name: string, amount: number, description?: string): Product {
+    const newProduct: Product = {
       id: Date.now().toString(),
-      nombre,
-      cantidad,
-      descripcion,
-      fechaCreacion: new Date(),
-      fechaActualizacion: new Date(),
+      name,
+      amount,
+      description,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
-    this.state.productos.push(nuevoProducto);
+    this.state.products.push(newProduct);
     this.notify();
-    return nuevoProducto;
+    return newProduct;
   }
 
-  actualizarProducto(
+  updateProduct(
     id: string,
-    updates: Partial<Omit<Producto, "id" | "fechaCreacion">>
-  ): Producto {
-    const index = this.state.productos.findIndex((p) => p.id === id);
+    updates: Partial<Omit<Product, "id" | "createdAt">>
+  ): Product {
+    const index = this.state.products.findIndex((p) => p.id === id);
     if (index === -1) {
       throw new Error("Producto no encontrado");
     }
 
-    this.state.productos[index] = {
-      ...this.state.productos[index],
+    this.state.products[index] = {
+      ...this.state.products[index],
       ...updates,
-      fechaActualizacion: new Date(),
+      updatedAt: new Date(),
     };
 
     this.notify();
-    return this.state.productos[index];
+    return this.state.products[index];
   }
 
-  eliminarProducto(id: string): void {
-    this.state.productos = this.state.productos.filter((p) => p.id !== id);
-    this.state.asignaciones = this.state.asignaciones.filter(
-      (a) => a.productoId !== id
+  deleteProduct(id: string): void {
+    this.state.products = this.state.products.filter((p) => p.id !== id);
+    this.state.assignments = this.state.assignments.filter(
+      (a) => a.productId !== id
     );
     this.notify();
   }
 
   // Assignment management
-  asignarProducto(
-    usuarioId: string,
-    productoId: string,
-    cantidadAsignada: number
-  ): Asignacion {
-    const producto = this.state.productos.find((p) => p.id === productoId);
-    if (!producto) {
+  assignProduct(
+    userId: string,
+    productId: string,
+    assignedAmount: number
+  ): Assignment {
+    const product = this.state.products.find((p) => p.id === productId);
+    if (!product) {
       throw new Error("Producto no encontrado");
     }
 
-    const asignacionesExistentes = this.state.asignaciones
-      .filter((a) => a.productoId === productoId)
-      .reduce((total, a) => total + a.cantidadAsignada, 0);
+    const existingAssignments = this.state.assignments
+      .filter((a) => a.productId === productId)
+      .reduce((total, a) => total + a.assignedAmount, 0);
 
-    if (asignacionesExistentes + cantidadAsignada > producto.cantidad) {
+    if (existingAssignments + assignedAmount > product.amount) {
       throw new Error("No hay suficiente cantidad disponible");
     }
 
-    const asignacionExistente = this.state.asignaciones.find(
-      (a) => a.usuarioId === usuarioId && a.productoId === productoId
+    const existingAssignment = this.state.assignments.find(
+      (a) => a.userId === userId && a.productId === productId
     );
 
-    if (asignacionExistente) {
-      asignacionExistente.cantidadAsignada += cantidadAsignada;
+    if (existingAssignment) {
+      existingAssignment.assignedAmount += assignedAmount;
       this.notify();
-      return asignacionExistente;
+      return existingAssignment;
     }
 
-    const nuevaAsignacion: Asignacion = {
+    const newAssignment: Assignment = {
       id: Date.now().toString(),
-      usuarioId,
-      productoId,
-      cantidadAsignada,
-      fechaAsignacion: new Date(),
+      userId,
+      productId,
+      assignedAmount,
+      assignedAt: new Date(),
     };
 
-    this.state.asignaciones.push(nuevaAsignacion);
+    this.state.assignments.push(newAssignment);
     this.notify();
-    return nuevaAsignacion;
+    return newAssignment;
   }
 
-  desasignarProducto(usuarioId: string, productoId: string): void {
-    this.state.asignaciones = this.state.asignaciones.filter(
-      (a) => !(a.usuarioId === usuarioId && a.productoId === productoId)
+  unassignProduct(userId: string, productId: string): void {
+    this.state.assignments = this.state.assignments.filter(
+      (a) => !(a.userId === userId && a.productId === productId)
     );
     this.notify();
   }
 
-  obtenerAsignacionesPorUsuario(usuarioId: string): Asignacion[] {
-    return this.state.asignaciones
-      .filter((a) => a.usuarioId === usuarioId)
+  getAssignmentsByUser(userId: string): Assignment[] {
+    return this.state.assignments
+      .filter((a) => a.userId === userId)
       .map((a) => ({
         ...a,
-        producto: this.state.productos.find((p) => p.id === a.productoId),
-        usuario: this.state.usuarios.find((u) => u.id === a.usuarioId),
+        product: this.state.products.find((p) => p.id === a.productId),
+        user: this.state.users.find((u) => u.id.toString() === a.userId),
       }));
   }
 
-  obtenerCantidadDisponible(productoId: string): number {
-    const producto = this.state.productos.find((p) => p.id === productoId);
-    if (!producto) return 0;
+  getAvailableQuantity(productId: string): number {
+    const product = this.state.products.find((p) => p.id === productId);
+    if (!product) return 0;
 
-    const asignadas = this.state.asignaciones
-      .filter((a) => a.productoId === productoId)
-      .reduce((total, a) => total + a.cantidadAsignada, 0);
+    const assigned = this.state.assignments
+      .filter((a) => a.productId === productId)
+      .reduce((total, a) => total + a.assignedAmount, 0);
 
-    return producto.cantidad - asignadas;
+    return product.amount - assigned;
   }
 }
 

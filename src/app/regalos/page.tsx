@@ -8,15 +8,15 @@ import { UserHeader } from "@/components/user-header";
 
 export default function RegalosPage() {
   const router = useRouter();
-  const { guestName } = useGuestStore();
+  const { guestName, isLoading } = useGuestStore();
 
   useEffect(() => {
-    if (!guestName) {
+    if (!isLoading && !guestName) {
       router.push("/login");
     }
-  }, [guestName, router]);
+  }, [guestName, router, isLoading]);
 
-  if (!guestName) {
+  if (isLoading || !guestName) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -29,7 +29,7 @@ export default function RegalosPage() {
       <UserHeader />
       <main className="container mx-auto px-4 py-6">
         <div className="slide-in-up">
-          <div className="text-center mb-8">
+          <div className="text-center">
             <h1 className="text-3xl font-bold text-foreground mb-2">
               Lista de Regalos
             </h1>

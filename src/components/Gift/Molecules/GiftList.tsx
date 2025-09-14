@@ -1,88 +1,136 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { GiftCard } from "@/components/Gift/Atoms/GiftCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "react-hot-toast";
-import { Asignacion } from "@/lib/types";
-import { useGiftStore } from "@/hooks/use-gift-store";
+import { useRouter } from "next/navigation";
+import { useGuestStore } from "@/store/use-guest-store";
+import { useProductStore } from "@/store/use-product-store";
+import { registerProductsVisitor } from "@/services/apiVisitors.service";
+import { Product } from "@/lib/types";
+import { ThankYouModal } from "./ThankYouModal";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
-export function GiftList() {
-  // const { guestName } = useGuestStore()
-  const { productos, usuarioActual, store } = useGiftStore();
-  const [selecciones, setSelecciones] = useState<Record<string, number>>({});
-  const [isLoading, setIsLoading] = useState(false);
+export const GiftList = () => {
+  const router = useRouter();
+  const {
+    products,
+    initializeProducts,
+    isLoading: isLoadingProducts,
+    selectedProducts,
+    setSelectedProducts,
+    clearSelectedProducts,
+  } = useProductStore();
 
-  const asignacionesActuales = useMemo(() => {
-    if (!usuarioActual) return [];
-    return store.obtenerAsignacionesPorUsuario(usuarioActual.id);
-  }, [usuarioActual, store]);
+  const {
+    visitorId,
+    isLoading: isGuestLoading,
+    clearGuestName,
+  } = useGuestStore();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showThankYouModal, setShowThankYouModal] = useState(false);
 
-  const handleSeleccionChange = (productoId: string, cantidad: number) => {
-    setSelecciones((prev) => ({
-      ...prev,
-      [productoId]: cantidad,
-    }));
-  };
+  useEffect(() => {
+    initializeProducts();
+  }, [initializeProducts]);
 
-  const handleGuardarSelecciones = async () => {
-    if (!usuarioActual) return;
+  const handleSelectionChange = (product: Product, quantity: number) => {
+    const existingProduct = selectedProducts.find((p) => p.id === product.id);
 
-    setIsLoading(true);
-
-    try {
-      // Remove previous assignments for products that are being updated
-      Object.keys(selecciones).forEach((productoId) => {
-        const asignacionExistente = asignacionesActuales.find(
-          (a) => a.productoId === productoId
+    if (existingProduct) {
+      if (quantity > 0) {
+        const updatedProducts = selectedProducts.map((p) =>
+          p.id === product.id ? { ...p, amount: quantity } : p
         );
-        if (asignacionExistente) {
-          store.desasignarProducto(usuarioActual.id, productoId);
-        }
-      });
-
-      // Add new assignments
-      Object.entries(selecciones).forEach(([productoId, cantidad]) => {
-        if (cantidad > 0) {
-          store.asignarProducto(usuarioActual.id, productoId, cantidad);
-        }
-      });
-
-      setSelecciones({});
-
-      toast("Tus regalos han sido asignados correctamente.", {
-        duration: 3000,
-      });
-    } catch (error) {
-      toast(
-        error instanceof Error
-          ? error.message
-          : "No se pudieron guardar las selecciones",
-        {
-          duration: 3000,
-        }
-      );
-    } finally {
-      setIsLoading(false);
+        setSelectedProducts(updatedProducts);
+      } else {
+        const filteredProducts = selectedProducts.filter(
+          (p) => p.id !== product.id
+        );
+        setSelectedProducts(filteredProducts);
+      }
+    } else if (quantity > 0) {
+      setSelectedProducts([
+        ...selectedProducts,
+        { ...product, amount: quantity },
+      ]);
     }
   };
 
-  const totalSelecciones = Object.values(selecciones).reduce(
-    (sum, cantidad) => sum + cantidad,
+  const handleSaveChanges = async () => {
+    if (!visitorId || selectedProducts.length === 0) {
+      toast.error("Por favor, selecciona al menos un producto.", {
+        duration: 3000,
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await registerProductsVisitor(
+        visitorId.toString(),
+        selectedProducts
+      );
+
+      if (response.status === 200) {
+        toast.success(
+          "¡Gracias por tu generosidad! Tus regalos han sido registrados.",
+          { duration: 3000 }
+        );
+        setShowThankYouModal(true);
+      } else {
+        toast.error(
+          response.message || "Hubo un error al registrar tus regalos.",
+          { duration: 3000 }
+        );
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      toast.error("Ocurrió un error inesperado. Por favor, intenta de nuevo.", {
+        duration: 3000,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowThankYouModal(false);
+    clearGuestName();
+    clearSelectedProducts();
+    router.push("/login");
+  };
+
+  const totalSelections = selectedProducts.reduce(
+    (sum, product) => sum + (product.amount || 0),
     0
   );
-  const haySelecciones = totalSelecciones > 0;
+  const hasSelections = totalSelections > 0;
+
+  if (isLoadingProducts || isGuestLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <LoadingSpinner size="lg" text="Cargando aplicación..." />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      {(haySelecciones || asignacionesActuales.length > 0) && (
+    <div className="space-y-6 p-4">
+      <ThankYouModal
+        isOpen={showThankYouModal}
+        onClose={handleCloseModal}
+        products={selectedProducts}
+      />
+      {hasSelections && (
         <Card
           className="bg-primary/5 border-primary/20 slide-in-up"
           style={{ animationDelay: "0.1s" }}
         >
-          <CardHeader className="pb-3">
+          <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
               Resumen de Selecciones
@@ -90,80 +138,55 @@ export function GiftList() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {asignacionesActuales.map((asignacion: Asignacion) => (
+              {selectedProducts.map((p) => (
                 <Badge
-                  key={asignacion.id}
-                  variant="secondary"
-                  className="bg-primary/10 text-primary"
+                  key={p.id}
+                  variant="outline"
+                  className="border-primary text-primary px-3 py-2"
                 >
-                  {asignacion.producto?.nombre} ({asignacion.cantidadAsignada})
+                  {p.name} ({p.amount})
                 </Badge>
               ))}
-              {Object.entries(selecciones).map(
-                ([productoId, cantidad]) =>
-                  cantidad > 0 && (
-                    <Badge
-                      key={productoId}
-                      variant="outline"
-                      className="border-primary text-primary"
-                    >
-                      {productos.find((p) => p.id === productoId)?.nombre} (+
-                      {cantidad})
-                    </Badge>
-                  )
-              )}
             </div>
           </CardContent>
         </Card>
       )}
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {productos.map((producto, index) => {
-          const cantidadDisponible = store.obtenerCantidadDisponible(
-            producto.id
+        {products.map((product) => {
+          const selectedProduct = selectedProducts.find(
+            (p) => p.id === product.id
           );
-          const cantidadAsignada = producto.cantidad - cantidadDisponible;
-          const seleccionActual = selecciones[producto.id] || 0;
+          const currentSelection = selectedProduct ? selectedProduct.amount : 0;
+          const availableQuantity = product.amount;
 
           return (
-            <div
-              key={producto.id}
-              className="slide-in-up"
-              style={{ animationDelay: `${0.1 + index * 0.05}s` }}
-            >
-              <GiftCard
-                product={producto}
-                availableQuantity={cantidadDisponible}
-                assignedQuantity={cantidadAsignada || 0}
-                currentSelection={seleccionActual}
-                onSelectionChange={(quantity: number) =>
-                  handleSeleccionChange(producto.id, quantity)
-                }
-              />
-            </div>
+            <GiftCard
+              key={product.id}
+              product={product}
+              availableQuantity={availableQuantity}
+              assignedQuantity={0} // This was from assignment store, now 0
+              currentSelection={currentSelection}
+              onSelectionChange={(quantity) =>
+                handleSelectionChange(product, quantity)
+              }
+            />
           );
         })}
       </div>
-
-      {haySelecciones && (
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+      {hasSelections && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
           <Button
-            onClick={handleGuardarSelecciones}
-            disabled={isLoading}
+            onClick={handleSaveChanges}
+            disabled={isSubmitting}
             size="lg"
-            className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-2xl pulse-glow px-8 py-3 text-base font-semibold"
+            className="shadow-lg"
           >
-            {isLoading ? (
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                Guardando...
-              </div>
-            ) : (
-              `Guardar Selecciones (${totalSelecciones})`
-            )}
+            {isSubmitting
+              ? "Guardando..."
+              : `Confirmar Selección (${totalSelections})`}
           </Button>
         </div>
       )}
     </div>
   );
-}
+};

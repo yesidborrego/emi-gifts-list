@@ -16,21 +16,29 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useGiftStore } from "@/hooks/use-gift-store";
-import { useState } from "react";
+import { useAssignmentStore } from "@/store/use-assignment-store";
+import { useState, useEffect } from "react";
+import { useProductStore } from "@/store/use-product-store";
+import { LoadingSpinner } from "../ui/loading-spinner";
 
 interface ProductTableProps {
   onEditProduct: (productId: string) => void;
 }
 
 export function ProductTable({ onEditProduct }: ProductTableProps) {
-  const { productos, store } = useGiftStore();
+  const { products, deleteProduct, initializeProducts, isLoading } =
+    useProductStore();
+  const { assignments } = useAssignmentStore();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    initializeProducts();
+  }, [initializeProducts]);
 
   const handleDeleteProduct = async (productId: string) => {
     try {
       setDeletingId(productId);
-      store.eliminarProducto(productId);
+      await deleteProduct(productId);
 
       toast.success("El producto ha sido eliminado correctamente.", {
         duration: 3000,
@@ -47,7 +55,15 @@ export function ProductTable({ onEditProduct }: ProductTableProps) {
     }
   };
 
-  if (productos.length === 0) {
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <LoadingSpinner size="lg" text="Cargando productos..." />
+      </div>
+    );
+  }
+
+  if (products.length === 0) {
     return (
       <Card className="slide-in-up">
         <CardContent className="flex flex-col items-center justify-center py-12">
@@ -65,9 +81,11 @@ export function ProductTable({ onEditProduct }: ProductTableProps) {
 
   return (
     <div className="space-y-4">
-      {productos.map((producto, index) => {
-        const cantidadDisponible = store.obtenerCantidadDisponible(producto.id);
-        const cantidadAsignada = producto.cantidad - cantidadDisponible;
+      {products.map((producto, index) => {
+        const cantidadAsignada = assignments
+          .filter((a) => a.productId === producto.id)
+          .reduce((sum, a) => sum + a.assignedAmount, 0);
+        const cantidadDisponible = producto.amount - cantidadAsignada;
 
         return (
           <Card
@@ -78,10 +96,10 @@ export function ProductTable({ onEditProduct }: ProductTableProps) {
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <CardTitle className="text-lg">{producto.nombre}</CardTitle>
-                  {producto.descripcion && (
+                  <CardTitle className="text-lg">{producto.name}</CardTitle>
+                  {producto.description && (
                     <p className="text-sm text-muted-foreground mt-1">
-                      {producto.descripcion}
+                      {producto.description}
                     </p>
                   )}
                 </div>
@@ -110,7 +128,7 @@ export function ProductTable({ onEditProduct }: ProductTableProps) {
                         <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
                         <AlertDialogDescription>
                           Esta acción no se puede deshacer. Se eliminará el
-                          producto &quot;{producto.nombre}&quot; y todas sus
+                          producto &quot;{producto.name}&quot; y todas sus
                           asignaciones.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
@@ -132,7 +150,7 @@ export function ProductTable({ onEditProduct }: ProductTableProps) {
               <div className="flex flex-wrap items-center gap-3">
                 <Badge variant="outline" className="gap-1">
                   <span className="w-2 h-2 bg-primary rounded-full" />
-                  Total: {producto.cantidad}
+                  Total: {producto.amount}
                 </Badge>
                 <Badge
                   variant={cantidadDisponible > 0 ? "secondary" : "destructive"}
