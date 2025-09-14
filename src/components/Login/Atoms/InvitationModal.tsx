@@ -47,7 +47,7 @@ const InvitationModal = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="text-center text-lg text-foreground"
+              className="text-center text-lg text-[#2d3748]"
             >
               <p className="italic">
                 Todavía no sé caminar ni hablar, pero ya sé organizar una fiesta
@@ -62,15 +62,15 @@ const InvitationModal = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <div className="flex items-center text-foreground">
+              <div className="flex items-center text-[#2d3748]">
                 <Calendar className="mr-3 h-6 w-6 text-[#f64782]" />
                 <span>12 de octubre de 2025</span>
               </div>
-              <div className="flex items-center text-foreground">
+              <div className="flex items-center text-[#2d3748]">
                 <Clock className="mr-3 h-6 w-6 text-[#f64782]" />
                 <span>5:00 pm</span>
               </div>
-              <div className="flex items-center text-foreground">
+              <div className="flex items-center text-[#2d3748]">
                 <MapPin className="mr-3 h-6 w-6 text-[#f64782]" />
                 <span>Calle 19 N 13 16, Villa Josefa – Palmar de Varela</span>
               </div>
@@ -80,7 +80,7 @@ const InvitationModal = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="text-center text-sm text-foreground"
+              className="text-center text-sm text-[#2d3748]"
             >
               <p>
                 Tu presencia es el mejor regalo, pero si deseas obsequiarnos
