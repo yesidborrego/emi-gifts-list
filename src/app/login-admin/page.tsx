@@ -21,11 +21,13 @@ interface RegisterData {
 
 export default function LoginAdminPage() {
   const [error, setError] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { signIn } = useAuthStore();
 
   const handleLogin = async (data: LoginData) => {
     try {
+      setIsLoading(true);
       setError("");
       const response = await fetchLogin(data);
 
@@ -49,11 +51,14 @@ export default function LoginAdminPage() {
         err instanceof Error ? err.message : "Error al iniciar sesión";
       setError(errorMessage);
       toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleRegister = async (data: RegisterData): Promise<boolean> => {
     try {
+      setIsLoading(true);
       setError("");
       data.password_confirmation = data.password_confirmation;
       const response = await fetchRegister(data);
@@ -73,6 +78,8 @@ export default function LoginAdminPage() {
       setError(errorMessage);
       toast.error(errorMessage);
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -80,6 +87,7 @@ export default function LoginAdminPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-background via-muted to-secondary/20 p-4">
       <div className="w-full max-w-md">
         <AdminAuthForm
+          isLoading={isLoading}
           onLogin={handleLogin}
           onRegister={handleRegister}
           error={error}
