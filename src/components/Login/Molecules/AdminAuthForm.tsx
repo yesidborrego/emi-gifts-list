@@ -11,6 +11,7 @@ import Image from "next/image";
 import { AdminCredentialsInputs } from "../Atoms/AdminCredentialsInputs";
 
 interface AdminAuthFormProps {
+  isLoading: boolean;
   onLogin: (data: { email: string; password: string }) => Promise<void> | void;
   onRegister: (data: {
     name: string;
@@ -22,6 +23,7 @@ interface AdminAuthFormProps {
 }
 
 export function AdminAuthForm({
+  isLoading,
   onLogin,
   onRegister,
   error,
@@ -31,12 +33,12 @@ export function AdminAuthForm({
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isRegister, setIsRegister] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  // const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    // setIsLoading(true);
     setLocalError("");
 
     if (isRegister) {
@@ -47,12 +49,12 @@ export function AdminAuthForm({
         !confirmPassword.trim()
       ) {
         setLocalError("Por favor, completa todos los campos.");
-        setIsLoading(false);
+        // setIsLoading(false);
         return;
       }
       if (password !== confirmPassword) {
         setLocalError("Las contraseñas no coinciden.");
-        setIsLoading(false);
+        // setIsLoading(false);
         return;
       }
       const success = await onRegister({
@@ -70,7 +72,7 @@ export function AdminAuthForm({
       }
     } else {
       if (!email.trim() || !password.trim()) {
-        setIsLoading(false);
+        // setIsLoading(false);
         return;
       }
       await onLogin({ email: email.trim(), password: password.trim() });
